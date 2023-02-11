@@ -3,15 +3,11 @@ import { FlatList, View, StyleSheet } from "react-native";
 import {CATEGORIES} from "../data/dummy-data";
 import CategoryGridTitle from "../components/CategoryGridTitle";
 
-
-
-
-
 function CategoriesScreen({navigation}){
 
     function renderCategoryItem(itemData) {
-        function pressHandler() {
-            navigation.navigate('MealOverview',{
+        function pressHandler() {   
+            navigation.navigate('MealsOverview',{
                 categoryId: itemData.item.id,
             });
         }
