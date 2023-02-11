@@ -3,31 +3,43 @@ import MealDetails from '../components/MealDetails';
 import {MEALS} from "../data/dummy-data";
 import Subtitle from '../components/MealDetail/Subtitle';
 import List from '../components/MealDetail/List';
-import { useLayoutEffect } from 'react';
+import { useContext, useLayoutEffect } from 'react';
 import IconButton from '../components/IconButton';
+import {FavoriteContext} from "../store/context/favorites-context";
+import { addFavorite, removeFavorite } from '../store/redux/favorites';
+import { useDispatch, useSelector } from 'react-redux';
 
 function MealDetailScreen({route, navigation}){
 
-    const mealId = route.params.mealId;
+  const favoriteMealIds = useSelector((state) => state.favoriteMeals.ids);
+  const dispatch = useDispatch();
 
-    const selectedMeal = MEALS.find((meal)=>meal.id === mealId);
+  const mealId = route.params.mealId;
+  const selectedMeal = MEALS.find((meal) => meal.id === mealId);
 
-    function headerButtonPRessHandler(){
-        console.log("Press")
+  const mealIsFavorite = favoriteMealIds.includes(mealId);
+
+  function changeFavoriteStatusHandler() {
+    if (mealIsFavorite) {
+      dispatch(removeFavorite({ id: mealId }));
+    } else {
+      dispatch(addFavorite({ id: mealId }));
     }
+  }
+
 
     useLayoutEffect(()=>{
         navigation.setOptions({
             headerRight: ()=>{
                 return <IconButton
                     title='tap me'
-                    onPress={headerButtonPRessHandler}
-                    icon='star'
+                    onPress={changeFavoriteStatusHandler}
+                    icon={mealIsFavorite? 'star':'star-outline'}
                     color='white'
                 />
             }
         })
-    },[navigation, headerButtonPRessHandler])
+    },[navigation, changeFavoriteStatusHandler])
 
     return (
         <ScrollView style={styles.rootContainer}>
