@@ -1,78 +1,141 @@
-import { StyleSheet, View, Alert } from "react-native";
-import OutlinedButton from "../UI/OutlinedButton";
-import { Colors } from "../../constants/colors";
-import {getCurrentPositionAsync,
-    useForegroundPermissions,
-    PermissionStatus
-} from "expo-location";
+import { useEffect, useState } from 'react';
+import { Alert, View, StyleSheet, Image, Text } from 'react-native';
+import {
+  getCurrentPositionAsync,
+  useForegroundPermissions,
+  PermissionStatus,
+} from 'expo-location';
+import {
+  useNavigation,
+  useRoute,
+  useIsFocused,
+} from '@react-navigation/native';
 
-function LocationPicker(){
+import { Colors } from '../../constants/colors';
+import OutlinedButton from '../UI/OutlinedButton';
+import { getAddress, getMapPreview } from '../../util/location';
 
-    const [locaPermissionInformation, requestPermission] = useForegroundPermissions();
+function LocationPicker({ onPickLocation }) {
+  const [pickedLocation, setPickedLocation] = useState();
+  const isFocused = useIsFocused();
 
-    async function verifyPermissions(){
-        if (locaPermissionInformation.status === PermissionStatus.UNDETERMINED) {
-            const permissionResponse = await requestPermission();
-    
-            return permissionResponse.granted;
-        }
-    
-        if (locaPermissionInformation.status === PermissionStatus.DENIED) {
-            Alert.alert(
-            'Insufficient Permissions!',
-            'You need to grant location permissions to use this app.'
-            );
-            return false;
-        }
-    
-        return true;   
+  const navigation = useNavigation();
+  const route = useRoute();
+
+  const [locationPermissionInformation, requestPermission] =
+    useForegroundPermissions();
+
+  useEffect(() => {
+    if (isFocused && route.params) {
+      const mapPickedLocation = {
+        lat: route.params.pickedLat,
+        lng: route.params.pickedLng,
+      };
+      setPickedLocation(mapPickedLocation);
+    }
+  }, [route, isFocused]);
+
+  useEffect(() => {
+    async function handleLocation() {
+      if (pickedLocation) {
+        const address = await getAddress(
+          pickedLocation.lat,
+          pickedLocation.lng
+        );
+        onPickLocation({ ...pickedLocation, address: address });
+      }
     }
 
-    async function getLocationHandler(){
-        const hasPermission = await verifyPermissions();
+    handleLocation();
+  }, [pickedLocation, onPickLocation]);
 
-        if (!hasPermission){
-            return;
-        }
+  async function verifyPermissions() {
+    if (
+      locationPermissionInformation.status === PermissionStatus.UNDETERMINED
+    ) {
+      const permissionResponse = await requestPermission();
 
-        const location = await getCurrentPositionAsync();
-        console.log(location);
-
+      return permissionResponse.granted;
     }
 
-    function pickOnMapHandler(){}
+    if (locationPermissionInformation.status === PermissionStatus.DENIED) {
+      Alert.alert(
+        'Insufficient Permissions!',
+        'You need to grant location permissions to use this app.'
+      );
+      return false;
+    }
 
-    return(
-        <View>
-            <View style={styles.mapPreview}></View>
-            <View style={styles.actions}>
-                <OutlinedButton
-                    onPress={getLocationHandler}
-                    icon="location"
-                >Locate User</OutlinedButton>
-                <OutlinedButton
-                    icon="location"
-                >Locate User</OutlinedButton>
-            </View>
-        </View>
-    )
+    return true;
+  }
+
+  async function getLocationHandler() {
+    const hasPermission = await verifyPermissions();
+
+    if (!hasPermission) {
+      return;
+    }
+
+    const location = await getCurrentPositionAsync();
+    setPickedLocation({
+      lat: location.coords.latitude,
+      lng: location.coords.longitude,
+    });
+  }
+
+  function pickOnMapHandler() {
+    navigation.navigate('Map');
+  }
+
+  let locationPreview = <Text>No location picked yet.</Text>;
+
+  if (pickedLocation) {
+    locationPreview = (
+      <Image
+        style={styles.image}
+        source={{
+          uri: getMapPreview(pickedLocation.lat, pickedLocation.lng),
+        }}
+      />
+    );
+  }
+
+  return (
+    <View>
+      <View style={styles.mapPreview}>{locationPreview}</View>
+      <View style={styles.actions}>
+        <OutlinedButton icon="location" onPress={getLocationHandler}>
+          Locate User
+        </OutlinedButton>
+        <OutlinedButton icon="map" onPress={pickOnMapHandler}>
+          Pick on Map
+        </OutlinedButton>
+      </View>
+    </View>
+  );
 }
 
 export default LocationPicker;
 
 const styles = StyleSheet.create({
-    mapPreview:{
-        width: '100%',
-        height: 200,
-        marginVertical: 8,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: Colors.primary100,
-        marginVertical: 8,
-    },
-    actions:{
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        alignItems: 'center'
-    }
-})
+  mapPreview: {
+    width: '100%',
+    height: 200,
+    marginVertical: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.primary100,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  actions: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+    // borderRadius: 4
+  },
+});

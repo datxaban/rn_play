@@ -1,6 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 
-import { Place } from '../models/place';
+import { Place } from '../models/places';
 
 const database = SQLite.openDatabase('places.db');
 
@@ -9,7 +9,7 @@ export function init() {
     database.transaction((tx) => {
       tx.executeSql(
         `CREATE TABLE IF NOT EXISTS places (
-          id INTEGER PRIMARY KEY NOT NULL,
+          id INTEGER PRIMARY KEY NOT NULL,r
           title TEXT NOT NULL,
           imageUri TEXT NOT NULL,
           address TEXT NOT NULL,
